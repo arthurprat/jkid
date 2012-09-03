@@ -1,0 +1,38 @@
+#! /usr/bin/env python
+import sys, json
+
+def print_help_and_quit(after_error=True):
+    uz = "Usage :\tjkid [key1 [key2 [...]]] < input"
+    if after_error:
+        print "---"
+        print uz
+        sys.exit()
+    print "Help:"
+    print "jkid is a small json reader."
+    print uz
+    sys.exit()
+
+
+if sys.stdin.isatty() or '-h' in sys.argv or '--help' in sys.argv:
+    print_help_and_quit(True)
+
+try:
+    son = json.load(sys.stdin)
+except Exception as e:
+    print "Could not read json."
+    print "Error:", e
+    print_help_and_quit()
+
+KEYS = []
+if len(sys.argv) >= 2:
+    KEYS = sys.argv[1:]
+
+for k in KEYS:
+    if k not in son:
+        print "Error : key '" + k + "' not found in json."
+        print_help_and_quit()
+    else:
+        son = son[k]
+    
+print ' > '.join(KEYS) + ' :'
+print json.dumps(son, sort_keys=True, indent=4)
