@@ -1,18 +1,22 @@
 #! /usr/bin/env python
-import sys, json, os
+import sys, json, os, copy
 
 def print_help_and_quit(after_error=True):
-    uz = "Usage :\tjkid [options] [key1 [key2 [...]]] filename"
-    uz += "\nA key can be an object key or an array index."
-    uz += "\nOptions :"
-    uz += "\n\t-p / --preview"
-    uz += "\n\t-q / --quiet"
+    uz = "Usage :\tjkid [options] [key1 [key2 [...]]] filename \
+        \n\nA key can be an object key or an array index.\
+        \nIf you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),\
+        \nyou can use a dot '.' as a key at some level : it will expand the json for every object at that level. Note that in that\
+        \ncase the following keys must be in all objects at that level.\
+        \n\nOptions :\
+        \n\t-p / --preview\
+        \n\t-q / --quiet\
+        \n\t-h / --help\
+        \n\nSee http://github.com/arthurprat/jkid"
     if after_error:
         print "---"
         print uz
         sys.exit(1)
-    print "Help:"
-    print "jkid is a small json reader.\n"
+    print "jkid is a command-line json explorer.\n"
     print uz
     sys.exit(1)
 
@@ -21,7 +25,9 @@ def error(text=None):
         print text
     print_help_and_quit()
 
-def reduce_obj(obj, depth=1):
+def reduce_obj(objct, depth=1):
+    '''This takes a json object and "unfolds" it only until ``depth`` levels. '''
+    obj = copy.deepcopy(objct)
     if isinstance(obj, list):
         if depth:
             out = []
@@ -33,7 +39,7 @@ def reduce_obj(obj, depth=1):
     elif isinstance(obj, dict):
         if depth:
             out = {}
-            for (key, val) in son.items():
+            for (key, val) in obj.items():
                 out[key] = reduce_obj(val, depth-1)
             return out
         else:
@@ -41,11 +47,67 @@ def reduce_obj(obj, depth=1):
     else:
         return str(obj)
 
+def get_subobj(objct, keylist = []):
+    '''This takes a json object and explore it down following the keys in ``keylist``.'''
+    obj = copy.deepcopy(objct)
+    for (i,k) in enumerate(keylist):
+        if isinstance(obj, list):
+            if k == '.':
+                if i+1 < len(keylist):
+                    newkl = keylist[i+1:]
+                    newobj = []
+                    for el in obj:
+                        newobj.append(get_subobj(el, newkl))
+                    return newobj
+                else:
+                    return obj
+            else:
+                try:
+                    k = int(k)
+                except:
+                    error('Error : Key for arrays must be integers (' + k + ')')            
+                if k < 0:
+                    error('Error : Key for arrays must be positive integers (' + k + ')')
+                if k >= len(obj):
+                    error('Error : Requested array index greater than array length (' + k + ')')
+        elif isinstance(obj, dict):
+            if k == '.':
+                newobj = {}
+                newkl = keylist[i+1:]
+                for (k, x) in obj.items():
+                    newobj[k] = get_subobj(x, newkl)
+                return newobj
+            if k not in obj:
+                error("Error : key '" + k + "' not found in json.")
+        else:
+            error("Error : object must be a json object or array to be called with key " + k + ".")
+        obj = obj[k]
+    return obj
+
+def make_path(obj, keylist):
+    path = "object"
+    curr = obj
+    for k in keylist:
+        if isinstance(curr, list):
+            if k == '.':
+                curr = curr[0]
+            else:
+                curr = curr[int(k)]
+            path += '[' + k + ']'
+        elif isinstance(curr, dict):
+            if k == '.':
+                path += '[' + k + ']'
+                curr = curr[curr.keys()[0]]
+            else:
+                path += '["' + k + '"]'
+                curr = curr[k]
+    return path
+
 
 if '-h' in sys.argv or '--help' in sys.argv:
     print_help_and_quit(False)
 
-# args / options / input
+## args / options / input ##
 opts = {'preview' : False, 'quiet' : False }
 opt_args = {
     '-p' : 'preview',
@@ -59,6 +121,7 @@ for oa in opt_args:
         opts[opt_args[oa]] = True
         args.remove(oa)
 
+## input ##
 if not args or not os.path.isfile(args[-1]):
     if sys.stdin.isatty():
         error("No input found.")
@@ -68,35 +131,18 @@ else:
     fil = open(args[-1], 'r')
     args.pop(-1)
 
-# loading json
+## loading json ##
 try:
     son = json.load(fil)
 except Exception as e:
     error("Could not read json.\nError : " + str(e))
 
+## go ##
 KEYS = args
-
-for k in KEYS:
-    if isinstance(son, list):
-        try:
-            k = int(k)
-        except:
-            error('Error : Key for arrays must be integers (' + k + ')')            
-        if k < 0:
-            error('Error : Key for arrays must be positive integers (' + k + ')')
-        if k >= len(son):
-            error('Error : Requested array index greater than array length (' + k + ')')
-    elif isinstance(son, dict):
-        if k not in son:
-            error("Error : key '" + k + "' not found in json.")
-    else:
-        error("Error : object must be a json object or array to be called with key " + k + ".")
-    son = son[k]
+sub = get_subobj(son, KEYS)
     
 if not opts['quiet']:
-    print ' > '.join(KEYS) + ' :'
-if opts['preview']:
-    out = reduce_obj(son)
-    print json.dumps(out, sort_keys=True, indent=2)
-else:
-    print json.dumps(son, sort_keys=True, indent=2)
+    print make_path(son, KEYS)
+out = reduce_obj(sub) if opts['preview'] else sub
+
+print json.dumps(out, sort_keys=True, indent=2)
