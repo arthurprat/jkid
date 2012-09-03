@@ -21,6 +21,26 @@ def error(text=None):
         print text
     print_help_and_quit()
 
+def reduce_obj(obj, depth=1):
+    if isinstance(obj, list):
+        if depth:
+            out = []
+            for x in obj:
+                out.append( reduce_obj(x, depth-1) )
+            return out
+        else:
+            return "list (" + str(len(obj)) + ")"
+    elif isinstance(obj, dict):
+        if depth:
+            out = {}
+            for (key, val) in son.items():
+                out[key] = reduce_obj(val, depth-1)
+            return out
+        else:
+            return "object with keys : " + ', '.join(obj.keys())
+    else:
+        return str(obj)
+
 
 if '-h' in sys.argv or '--help' in sys.argv:
     print_help_and_quit(False)
@@ -76,13 +96,7 @@ for k in KEYS:
 if not opts['quiet']:
     print ' > '.join(KEYS) + ' :'
 if opts['preview']:
-    OUT = {list : 'list'}
-    if isinstance(son, dict):
-        out = {}
-        for (key, val) in son.items():
-            out[key] = str(type(val))
-        print json.dumps(out, sort_keys=True, indent=2)
-    else:
-        print type(son)
+    out = reduce_obj(son)
+    print json.dumps(out, sort_keys=True, indent=2)
 else:
     print json.dumps(son, sort_keys=True, indent=2)
