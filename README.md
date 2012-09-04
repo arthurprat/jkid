@@ -1,13 +1,15 @@
 jkid
 ====
 
-Command-line json explorer. Useful to explore big jsons. Written in Python.
+Command-line json explorer. Useful to explore big jsons.  
+jkid was written in Python.
 
 Usage
 -----
 
 	jkid [options] [key1 [key2 [...]]] file
 
+Works also with `stdin` and no `file` argument.
 A key can be an object key or an array index.  
 If you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),
 you can use a dot '.' as a key at some level : it will expand the json for every object at that level (see example). Note that in that
@@ -15,9 +17,9 @@ case the following keys must be in all objects at that level.
 
 Options :
 
-	-p / --preview
-	-q / --quiet
-	-h / --help
+	-p / --preview	Displays only one level, with information on the object's content at that level. Prevents console logorrhea.
+	-q / --quiet	
+	-h / --help		
 
 Example
 -------
@@ -31,14 +33,15 @@ Example
 	    "h": "i"
 	  }
 	]
-	$  echo '[{"a":1,"b":0},{"a":2,"b":0},{"a":3,"b":0}]' > test2.json 
-	$  jkid . a test2.json 
+	$
+	$  echo '[{"a":1,"b":0},{"a":2,"b":0},{"a":3,"b":0}]' | jkid . a
 	object[.]["a"]
 	[
 	  1, 
 	  2, 
 	  3
 	]
+	$
 	$  echo '{"john":{"size":20, "eyes":"green"}, "bob":{"size":30, "eyes":"brown"}}' > test3.json
 	$  jkid . size test3.json 
 	object[.]["size"]
