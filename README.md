@@ -9,11 +9,11 @@ Usage
 
 	jkid [options] [key1 [key2 [...]]] file
 
-Works also with `stdin` and no `file` argument.
+Works also with `stdin` and no `file` argument.  
 A key can be an object key or an array index.  
 If you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),
-you can use a dot '.' as a key at some level : it will expand the json for every object at that level (see example). Note that in that
-case the following keys must be in all objects at that level.
+you can use a dot `.` as a key at some level : it will expand the json for every object at that level (see examples 2 and 3),
+allowing for 'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.
 
 Options :
 
@@ -59,7 +59,7 @@ Example
 
 Installation
 ------------
-Use directly `./jkid` or copy jkid in a directory that's in your `$PATH`.
+Use directly `./jkid` or copy jkid in a directory that's in your `$PATH` or symlink it.
 
 Requirements
 ------------

@@ -3,11 +3,11 @@ import sys, json, os, copy
 
 def print_help_and_quit(after_error=True):
     uz = "Usage :\tjkid [options] [key1 [key2 [...]]] filename \
-        \n\nWorks also with `stdin` and no `file` argument.\
+        \n\nWorks also with 'stdin' and no 'file' argument.\
         \n\nA key can be an object key or an array index.\
         \nIf you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),\
-        \nyou can use a dot '.' as a key at some level : it will expand the json for every object at that level. Note that in that\
-        \ncase the following keys must be in all objects at that level.\
+        \nyou can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for \
+        'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.\
         \n\nOptions :\
         \n\t-p / --preview\tDisplays only one level, with information on the object's content at that level.\
         \n\t\t\tPrevents console logorrhea.\
