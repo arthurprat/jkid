@@ -17,6 +17,7 @@ allowing for 'transversal' exploration of the json. Note that in that case the f
 
 Options :
 
+    -f / --flexible Returns null if a key is not in the object. Useful when using the dot `.` key and following keys are not in all sub-objects.
 	-p / --preview	Displays only one level, with information on the object's content at that level. Prevents console logorrhea.
 	-q / --quiet	
 	-h / --help		

@@ -2,18 +2,27 @@
 import sys, json, os, copy
 
 def print_help_and_quit(after_error=True):
-    uz = "Usage :\tjkid [options] [key1 [key2 [...]]] filename \
-        \n\nWorks also with 'stdin' and no 'file' argument.\
-        \n\nA key can be an object key or an array index.\
-        \nIf you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),\
-        \nyou can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for \
-        'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.\
-        \n\nOptions :\
-        \n\t-p / --preview\tDisplays only one level, with information on the object's content at that level.\
-        \n\t\t\tPrevents console logorrhea.\
-        \n\t-q / --quiet\
-        \n\t-h / --help\
-        \n\nSee http://github.com/arthurprat/jkid"
+    blop = '''
+    dsfg
+    dfg
+    dfg
+    '''
+    uz = """
+Usage : jkid [options] [key1 [key2 [...]]] filename
+\nWorks also with 'stdin' and no 'file' argument.
+\nA key can be an object key or an array index.
+If you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),
+you can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for 
+'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.
+\nOptions :
+    -f / --flexible Returns null if a key is not in the object. Useful when using the dot '.' key
+                    and following keys are not in all sub-objects.
+    -p / --preview  Displays only one level, with information on the object's content at that level.
+                    Prevents console logorrhea.
+    -q / --quiet
+    -h / --help
+\nSee http://github.com/arthurprat/jkid
+    """
     if after_error:
         print "---"
         print uz
@@ -49,7 +58,7 @@ def reduce_obj(objct, depth=1):
     else:
         return str(obj)
 
-def get_subobj(objct, keylist = []):
+def get_subobj(objct, keylist, opts):
     '''This takes a json object and explore it down following the keys in ``keylist``.'''
     obj = copy.deepcopy(objct)
     for (i,k) in enumerate(keylist):
@@ -59,7 +68,7 @@ def get_subobj(objct, keylist = []):
                     newkl = keylist[i+1:]
                     newobj = []
                     for el in obj:
-                        newobj.append(get_subobj(el, newkl))
+                        newobj.append(get_subobj(el, newkl, opts))
                     return newobj
                 else:
                     return obj
@@ -71,22 +80,26 @@ def get_subobj(objct, keylist = []):
                 if k < 0:
                     error('Error : Key for arrays must be positive integers (' + k + ')')
                 if k >= len(obj):
+                    if opts['flexible']:
+                        return None
                     error('Error : Requested array index greater than array length (' + k + ')')
         elif isinstance(obj, dict):
             if k == '.':
                 newobj = {}
                 newkl = keylist[i+1:]
                 for (k, x) in obj.items():
-                    newobj[k] = get_subobj(x, newkl)
+                    newobj[k] = get_subobj(x, newkl, opts)
                 return newobj
             if k not in obj:
+                if opts['flexible']:
+                    return None
                 error("Error : key '" + k + "' not found in json.")
         else:
             error("Error : object must be a json object or array to be called with key " + k + ".")
         obj = obj[k]
     return obj
 
-def make_path(obj, keylist):
+def make_path(obj, keylist, opts):
     path = "object"
     curr = obj
     for k in keylist:
@@ -100,9 +113,12 @@ def make_path(obj, keylist):
             if k == '.':
                 path += '[' + k + ']'
                 curr = curr[curr.keys()[0]]
-            else:
+            elif k in curr:
                 path += '["' + k + '"]'
                 curr = curr[k]
+            else:
+                path += '...'
+                break
     return path
 
 
@@ -110,12 +126,14 @@ if '-h' in sys.argv or '--help' in sys.argv:
     print_help_and_quit(False)
 
 ## args / options / input ##
-opts = {'preview' : False, 'quiet' : False }
+opts = {'preview' : False, 'quiet' : False, 'flexible' : False }
 opt_args = {
     '-p' : 'preview',
     '--preview' : 'preview',
     '-q' : 'quiet',
-    '--quiet' : 'quiet'
+    '--quiet' : 'quiet',
+    '-f' : 'flexible',
+    '--flexible' : 'flexible'
 }
 args = sys.argv[1:]
 for oa in opt_args:
@@ -141,10 +159,10 @@ except Exception as e:
 
 ## go ##
 KEYS = args
-sub = get_subobj(son, KEYS)
+sub = get_subobj(son, KEYS, opts)
     
 if not opts['quiet']:
-    print make_path(son, KEYS)
+    print make_path(son, KEYS, opts)
 out = reduce_obj(sub) if opts['preview'] else sub
 
 print json.dumps(out, sort_keys=True, indent=2)
