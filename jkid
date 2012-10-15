@@ -1,6 +1,28 @@
 #! /usr/bin/env python
 import sys, json, os, copy
 
+if '-h' in sys.argv or '--help' in sys.argv:
+    print_help_and_quit(False)
+
+## args / options / input ##
+opts = {'preview' : False, 'quiet' : False, 'flexible' : False, 'count' : False }
+opt_args = {
+    '-p' : 'preview',
+    '--preview' : 'preview',
+    '-q' : 'quiet',
+    '--quiet' : 'quiet',
+    '-f' : 'flexible',
+    '--flexible' : 'flexible',
+    '-c' : 'count',
+    '--count' : 'count',
+}
+args = sys.argv[1:]
+for oa in opt_args:
+    if oa in args:
+        opts[opt_args[oa]] = True
+        args.remove(oa)
+
+
 def print_help_and_quit(after_error=True):
     blop = '''
     dsfg
@@ -10,7 +32,7 @@ def print_help_and_quit(after_error=True):
     uz = """
 Usage : jkid [options] [key1 [key2 [...]]] filename
 \nWorks also with 'stdin' and no 'file' argument.
-\nA key can be an object key or an array index.
+\nA key can be an object key or an array index. Array indexes can be negative.
 If you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),
 you can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for 
 'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.
@@ -19,6 +41,10 @@ you can use a dot '.' as a key at some level : it will expand the json for every
                     and following keys are not in all sub-objects.
     -p / --preview  Displays only one level, with information on the object's content at that level.
                     Prevents console logorrhea.
+    -c / --count    For arrays, returns the length;
+                    For objects, returns the number ok keys;
+                    For strings, returns the length.
+                    Else returns 0.
     -q / --quiet
     -h / --help
 \nSee http://github.com/arthurprat/jkid
@@ -34,7 +60,10 @@ you can use a dot '.' as a key at some level : it will expand the json for every
 def error(text=None):
     if text:
         print text
-    print_help_and_quit()
+    if not opts['quiet']:
+        print_help_and_quit()
+    else:
+        sys.exit(0)
 
 def reduce_obj(objct, depth=1):
     '''This takes a json object and "unfolds" it only until ``depth`` levels. '''
@@ -76,13 +105,11 @@ def get_subobj(objct, keylist, opts):
                 try:
                     k = int(k)
                 except:
-                    error('Error : Key for arrays must be integers (' + k + ')')            
-                if k < 0:
-                    error('Error : Key for arrays must be positive integers (' + k + ')')
-                if k >= len(obj):
+                    error('Error : Key for arrays must be integers (' + str(k) + ')')
+                if abs(k) >= len(obj):
                     if opts['flexible']:
                         return None
-                    error('Error : Requested array index greater than array length (' + k + ')')
+                    error('Error : Requested array index greater than array length (' + str(k) + ')')
         elif isinstance(obj, dict):
             if k == '.':
                 newobj = {}
@@ -93,9 +120,9 @@ def get_subobj(objct, keylist, opts):
             if k not in obj:
                 if opts['flexible']:
                     return None
-                error("Error : key '" + k + "' not found in json.")
+                error("Error : key '" + str(k) + "' not found in json.")
         else:
-            error("Error : object must be a json object or array to be called with key " + k + ".")
+            error("Error : object must be a json object or array to be called with key " + str(k) + ".")
         obj = obj[k]
     return obj
 
@@ -122,24 +149,6 @@ def make_path(obj, keylist, opts):
     return path
 
 
-if '-h' in sys.argv or '--help' in sys.argv:
-    print_help_and_quit(False)
-
-## args / options / input ##
-opts = {'preview' : False, 'quiet' : False, 'flexible' : False }
-opt_args = {
-    '-p' : 'preview',
-    '--preview' : 'preview',
-    '-q' : 'quiet',
-    '--quiet' : 'quiet',
-    '-f' : 'flexible',
-    '--flexible' : 'flexible'
-}
-args = sys.argv[1:]
-for oa in opt_args:
-    if oa in args:
-        opts[opt_args[oa]] = True
-        args.remove(oa)
 
 ## input ##
 if not args or not os.path.isfile(args[-1]):
@@ -163,6 +172,15 @@ sub = get_subobj(son, KEYS, opts)
     
 if not opts['quiet']:
     print make_path(son, KEYS, opts)
-out = reduce_obj(sub) if opts['preview'] else sub
+if opts['preview']:
+    out = reduce_obj(sub)
+elif opts['count']:
+    if type(sub) == dict or type(sub) == list or type(sub) == str:
+        out = len(sub)
+    else:
+        out = -1
+else:
+    out = sub
 
 print json.dumps(out, sort_keys=True, indent=2)
+sys.exit(0)
