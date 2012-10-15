@@ -44,7 +44,7 @@ you can use a dot '.' as a key at some level : it will expand the json for every
     -c / --count    For arrays, returns the length;
                     For objects, returns the number ok keys;
                     For strings, returns the length.
-                    Else returns 0.
+                    Else returns -1.
     -q / --quiet
     -h / --help
 \nSee http://github.com/arthurprat/jkid

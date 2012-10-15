@@ -19,7 +19,7 @@ Options :
 
     -f / --flexible Returns null if a key is not in the object. Useful when using the dot `.` key and following keys are not in all sub-objects.
 	-p / --preview	Displays only one level, with information on the object's content at that level. Prevents console logorrhea.
-	-c / --count	For arrays, returns the length; For objects, returns the number ok keys; For strings, returns the length. Else returns 0.
+	-c / --count	For arrays, returns the length; For objects, returns the number ok keys; For strings, returns the length. Else returns -1.
 	-q / --quiet	
 	-h / --help		
 
