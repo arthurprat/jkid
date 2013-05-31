@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 import sys, json, os, copy
 
-if '-h' in sys.argv or '--help' in sys.argv:
-    print_help_and_quit(False)
-
 ## args / options / input ##
 opts = {'preview' : False, 'quiet' : False, 'flexible' : False, 'count' : False }
 opt_args = {
@@ -22,19 +19,13 @@ for oa in opt_args:
         opts[opt_args[oa]] = True
         args.remove(oa)
 
-
-def print_help_and_quit(after_error=True):
-    blop = '''
-    dsfg
-    dfg
-    dfg
-    '''
+def print_help_and_quit():
     uz = """
 Usage : jkid [options] [key1 [key2 [...]]] filename
 \nWorks also with 'stdin' and no 'file' argument.
 \nA key can be an object key or an array index. Array indexes can be negative.
 If you have an array or an object which contains similar objects (i.e. objects that share the same name/value structure),
-you can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for 
+you can use a dot '.' as a key at some level : it will expand the json for every object at that level, allowing for
 'transversal' exploration of the json. Note that in that case the following keys must be in all objects at that level.
 \nOptions :
     -f / --flexible Returns null if a key is not in the object. Useful when using the dot '.' key
@@ -49,19 +40,13 @@ you can use a dot '.' as a key at some level : it will expand the json for every
     -h / --help
 \nSee http://github.com/arthurprat/jkid
     """
-    if after_error:
-        print "---"
-        print uz
-        sys.exit(1)
     print "jkid is a command-line json explorer.\n"
     print uz
     sys.exit(0)
 
-def error(text=None):
+def error(text):
     if text:
         print text
-    if not opts['quiet']:
-        print_help_and_quit()
     else:
         sys.exit(0)
 
@@ -148,10 +133,13 @@ def make_path(obj, keylist, opts):
                 break
     return path
 
-
+if '-h' in sys.argv or '--help' in sys.argv:
+    print_help_and_quit()
 
 ## input ##
-if not args or not os.path.isfile(args[-1]):
+if not args and sys.stdin.isatty():
+    print_help_and_quit()
+if not os.path.isfile(args[-1]):
     if sys.stdin.isatty():
         error("No input found.")
     else:
@@ -169,7 +157,7 @@ except Exception as e:
 ## go ##
 KEYS = args
 sub = get_subobj(son, KEYS, opts)
-    
+
 if not opts['quiet']:
     print make_path(son, KEYS, opts)
 if opts['preview']:
